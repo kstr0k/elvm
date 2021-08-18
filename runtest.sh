@@ -1,37 +1,36 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
-out=$1
+out=$1; shift
 tmp=${out}.tmp
-name=$(basename ${out} | sed 's/\..*//')
-shift
-cmd="$@"
-ext=$(echo ${cmd} | sed 's/.*\.//')
+name=${out##*/}; name=${name%%.*}
+cmd=$*
+ext=${cmd##*.}
 
 ins=$(/bin/ls */${name}*.in 2> /dev/null || true)
 
 if [ -z "${ins}" ]; then
     if [ ${ext} = "sed" ]; then
         echo | ${cmd} > ${tmp}
-        perl -i -p0 -e 's/\n\Z//' ${tmp}
+        perl -i -p0 -e 's/\n\Z//' "${tmp}"
     else
-        ${cmd} < /dev/null > ${tmp}
+        ${cmd} < /dev/null > "${tmp}"
     fi
 else
-    rm -f ${tmp}
+    rm -f "${tmp}"
     for i in ${ins}; do
-        echo "=== ${i} ===" >> ${tmp}
+        echo "=== ${i} ===" >> "${tmp}"
         if [ ${ext} = "ws" ]; then
-            (cat ${i} && echo -en "\0") | ${cmd} >> ${tmp}
+            (cat "${i}" && printf "\0") | ${cmd} >> "${tmp}"
         elif [ ${ext} = "sed" ]; then
-            (cat ${i} && echo) | ${cmd} >> ${tmp}
-            perl -i -p0 -e 's/\n\Z//' ${tmp}
+            (cat "${i}" && echo) | ${cmd} >> "${tmp}"
+            perl -i -p0 -e 's/\n\Z//' "${tmp}"
         else
-            ${cmd} < ${i} >> ${tmp}
+            ${cmd} < "${i}" >> "${tmp}"
         fi
-        echo >> ${tmp}
+        echo >> "${tmp}"
     done
 fi
 
-mv ${tmp} ${out}
+mv "${tmp}" "${out}"
